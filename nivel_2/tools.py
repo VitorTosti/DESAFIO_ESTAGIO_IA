@@ -152,31 +152,101 @@ def historico_cliente(cliente_id: str) -> dict:
 
     datas_validas = cliente["data"].dropna()
 
+    # Métricas das operações sinalizadas como valor atípico.
+    operacoes_atipicas = cliente[
+        cliente["flag_valor_atipico"]
+    ]
+
+    volume_total = float(cliente["valor_brl"].sum())
+    volume_atipico = float(
+        operacoes_atipicas["valor_brl"].sum()
+    )
+
+    # O percentual também é calculado deterministicamente em pandas/Python,
+    # evitando que a LLM precise realizar essa conta.
+    percentual_volume_atipico = (
+        volume_atipico / volume_total * 100
+        if volume_total > 0
+        else 0
+    )
+
     return {
         "cliente_id": cliente_id,
+
         "qtd_operacoes": int(len(cliente)),
-        "volume_total_brl": round(float(cliente["valor_brl"].sum()), 2),
-        "valor_medio_brl": round(float(cliente["valor_brl"].mean()), 2),
-        "mediana_brl": round(float(cliente["valor_brl"].median()), 2),
+
+        "volume_total_brl": round(
+            volume_total,
+            2
+        ),
+
+        "valor_medio_brl": round(
+            float(cliente["valor_brl"].mean()),
+            2
+        ),
+
+        "mediana_brl": round(
+            float(cliente["valor_brl"].median()),
+            2
+        ),
+
         "primeira_operacao": (
             datas_validas.min().strftime("%Y-%m-%d")
-            if not datas_validas.empty else None
+            if not datas_validas.empty
+            else None
         ),
+
         "ultima_operacao": (
             datas_validas.max().strftime("%Y-%m-%d")
-            if not datas_validas.empty else None
+            if not datas_validas.empty
+            else None
         ),
+
         "qtd_operacoes_atipicas": int(
             cliente["flag_valor_atipico"].sum()
         ),
+
+        "volume_operacoes_atipicas_brl": round(
+            volume_atipico,
+            2
+        ),
+
+        "percentual_volume_atipico": round(
+            percentual_volume_atipico,
+            2
+        ),
+
         "qtd_dias_fracionamento": int(
             cliente.loc[
                 cliente["flag_fracionamento"],
                 "data"
             ].nunique()
         ),
-    }
 
+        "datas_fracionamento": (
+            cliente.loc[
+                cliente["flag_fracionamento"],
+                "data"
+            ]
+            .dropna()
+            .drop_duplicates()
+            .sort_values()
+            .dt.strftime("%Y-%m-%d")
+            .tolist()
+        ),
+
+        "datas_valores_atipicos": (
+            cliente.loc[
+                cliente["flag_valor_atipico"],
+                "data"
+            ]
+            .dropna()
+            .drop_duplicates()
+            .sort_values()
+            .dt.strftime("%Y-%m-%d")
+            .tolist()
+        ),
+    }
 
 
 def operacoes_do_dia(cliente_id: str, data: str) -> dict:
