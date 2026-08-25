@@ -1,4 +1,5 @@
 import json
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -122,6 +123,139 @@ def aplicar_regras(df: pd.DataFrame) -> pd.DataFrame:
     return resultado
 
 
+@lru_cache(maxsize=1)
+def obter_base_processada() -> pd.DataFrame:
+    """Carrega, trata e aplica as regras à base do Nível 2 uma única vez."""
+
+    caminho_dados = (
+        Path(__file__).resolve().parent.parent
+        / "dados"
+        / "dados_nivel_2.json"
+    )
+
+    df, taxa_cambio = carregar_dados(caminho_dados)
+    df_limpo = limpar_dados(df, taxa_cambio)
+
+    return aplicar_regras(df_limpo)
+
+
+def historico_cliente(cliente_id: str) -> dict:
+    """Retorna um resumo agregado do histórico de um cliente."""
+
+    df = obter_base_processada()
+    cliente = df[df["cliente_id"] == cliente_id].copy()
+
+    if cliente.empty:
+        return {
+            "erro": f"Cliente {cliente_id} não encontrado."
+        }
+
+    datas_validas = cliente["data"].dropna()
+
+    return {
+        "cliente_id": cliente_id,
+        "qtd_operacoes": int(len(cliente)),
+        "volume_total_brl": round(float(cliente["valor_brl"].sum()), 2),
+        "valor_medio_brl": round(float(cliente["valor_brl"].mean()), 2),
+        "mediana_brl": round(float(cliente["valor_brl"].median()), 2),
+        "primeira_operacao": (
+            datas_validas.min().strftime("%Y-%m-%d")
+            if not datas_validas.empty else None
+        ),
+        "ultima_operacao": (
+            datas_validas.max().strftime("%Y-%m-%d")
+            if not datas_validas.empty else None
+        ),
+        "qtd_operacoes_atipicas": int(
+            cliente["flag_valor_atipico"].sum()
+        ),
+        "qtd_dias_fracionamento": int(
+            cliente.loc[
+                cliente["flag_fracionamento"],
+                "data"
+            ].nunique()
+        ),
+    }
+
+
+
+def operacoes_do_dia(cliente_id: str, data: str) -> dict:
+    """Retorna as operações de um cliente em uma data específica."""
+
+    df = obter_base_processada()
+
+    try:
+        data_consulta = pd.to_datetime(data)
+    except (ValueError, TypeError):
+        return {
+            "erro": f"Data inválida: {data}."
+        }
+
+    operacoes = df[
+        (df["cliente_id"] == cliente_id)
+        & (df["data"] == data_consulta)
+    ].copy()
+
+    if operacoes.empty:
+        return {
+            "cliente_id": cliente_id,
+            "data": data,
+            "qtd_operacoes": 0,
+            "operacoes": [],
+        }
+
+    colunas = [
+        "id",
+        "valor_brl",
+        "canal",
+        "tipo",
+        "contraparte",
+        "observacao",
+        "flag_fracionamento",
+        "flag_valor_atipico",
+    ]
+
+    return {
+        "cliente_id": cliente_id,
+        "data": data_consulta.strftime("%Y-%m-%d"),
+        "qtd_operacoes": int(len(operacoes)),
+        "volume_total_brl": round(float(operacoes["valor_brl"].sum()), 2),
+        "operacoes": operacoes[colunas].to_dict(orient="records"),
+    }
+
+
+def perfil_canal(cliente_id: str) -> dict:
+    """Retorna a distribuição das operações do cliente por canal."""
+
+    df = obter_base_processada()
+    cliente = df[df["cliente_id"] == cliente_id]
+
+    if cliente.empty:
+        return {
+            "erro": f"Cliente {cliente_id} não encontrado."
+        }
+
+    distribuicao = (
+        cliente.groupby("canal")
+        .agg(
+            qtd_operacoes=("id", "count"),
+            volume_brl=("valor_brl", "sum"),
+        )
+        .reset_index()
+    )
+
+    distribuicao["percentual_operacoes"] = (
+        distribuicao["qtd_operacoes"]
+        / distribuicao["qtd_operacoes"].sum()
+        * 100
+    ).round(2)
+
+    return {
+        "cliente_id": cliente_id,
+        "distribuicao_canais": distribuicao.to_dict(orient="records"),
+    }
+
+
 def gerar_ranking(df: pd.DataFrame, top_n: int = 10) -> pd.DataFrame:
     """Gera o ranking dos clientes com maior número de sinalizações."""
 
@@ -228,3 +362,13 @@ if __name__ == "__main__":
     )
 
     print(f"\nRanking salvo em: {caminho_saida}")
+
+        # Testes das ferramentas que serão disponibilizadas ao agente.
+    print("\n--- Teste: historico_cliente ---")
+    print(historico_cliente("CLI-014"))
+
+    print("\n--- Teste: operacoes_do_dia ---")
+    print(operacoes_do_dia("CLI-029", "2026-05-26"))
+
+    print("\n--- Teste: perfil_canal ---")
+    print(perfil_canal("CLI-014"))
