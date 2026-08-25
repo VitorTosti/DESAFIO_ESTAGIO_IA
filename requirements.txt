@@ -1,0 +1,6 @@
+numpy
+pandas
+pydantic
+python-dotenv
+google-genai
+jupyter
