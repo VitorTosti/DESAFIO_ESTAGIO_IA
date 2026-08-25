@@ -1,6 +1,9 @@
 import os
 import time
+import json
+import pandas as pd
 
+from pathlib import Path
 from typing import Literal
 from pydantic import BaseModel, ValidationError
 from dotenv import load_dotenv
@@ -77,7 +80,21 @@ Regras obrigatórias:
 
 - Escolha somente as ferramentas necessárias para investigar cada caso.
 
-- Não chame todas as ferramentas automaticamente.
+- Comece preferencialmente por historico_cliente para compreender quais
+  sinalizações determinísticas existem.
+
+- Utilize operacoes_do_dia somente quando houver uma data sinalizada que
+  precise ser aprofundada.
+
+- Utilize perfil_canal somente quando a distribuição por canais for relevante
+  para esclarecer ou contextualizar a sinalização identificada.
+
+- Não utilize perfil_canal apenas para complementar o parecer quando o
+  histórico e as operações sinalizadas já forem suficientes.
+
+- Não chame todas as ferramentas automaticamente. A ausência de chamada de
+  uma ferramenta é esperada quando ela não acrescenta informação relevante
+  ao caso.
 
 - Diferencie fatos observados de hipóteses que exigem investigação adicional.
 
@@ -91,6 +108,11 @@ Regras obrigatórias:
 
 - Ao descrever operações sinalizadas, utilize as flags retornadas pelas ferramentas
   e não refaça comparações entre valores e limites ou estatísticas.
+
+- Não mencione origem, destino ou compatibilidade com o perfil econômico do
+  cliente como fatos quando essas informações não estiverem disponíveis.
+  Esses elementos podem ser indicados apenas como informações adicionais
+  que uma análise humana poderia solicitar.
 """
 )
 
@@ -233,8 +255,147 @@ retornadas pelas ferramentas.
             ),
         }
 
-if __name__ == "__main__":
-    resultado = analisar_cliente("CLI-029")
 
-    print("\n--- Resultado do agente ---")
-    print(resultado)
+def executar_lote(
+    clientes: list[str],
+    max_tentativas: int = 3,
+    pausa_entre_clientes: float = 3.0,
+) -> list[dict]:
+    """Executa o agente em lote com retry e salvamento incremental."""
+
+    resultados = []
+
+    caminho_saida = (
+        Path(__file__).resolve().parent.parent
+        / "outputs"
+        / "pareceres_agente.json"
+    )
+
+    for indice, cliente_id in enumerate(clientes, start=1):
+        print(
+            f"\n[{indice}/{len(clientes)}] "
+            f"Analisando {cliente_id}..."
+        )
+
+        resultado = None
+
+        for tentativa in range(1, max_tentativas + 1):
+            resultado = analisar_cliente(cliente_id)
+
+            if resultado["status"] == "sucesso":
+                print(
+                    f"Sucesso em {resultado['metricas']['latencia_segundos']}s"
+                )
+                break
+
+            print(
+                f"Tentativa {tentativa}/{max_tentativas} falhou: "
+                f"{resultado.get('status')}"
+            )
+
+            if tentativa < max_tentativas:
+                espera = tentativa * 10
+
+                print(
+                    f"Aguardando {espera}s antes de tentar novamente..."
+                )
+
+                time.sleep(espera)
+
+        resultados.append(resultado)
+
+        # Salva após cada cliente para não perder execuções já concluídas.
+        with caminho_saida.open(
+            "w",
+            encoding="utf-8"
+        ) as arquivo:
+            json.dump(
+                resultados,
+                arquivo,
+                ensure_ascii=False,
+                indent=2
+            )
+
+        if indice < len(clientes):
+            time.sleep(pausa_entre_clientes)
+
+    return resultados
+
+def consolidar_metricas(resultados: list[dict]) -> pd.DataFrame:
+    """Consolida métricas das execuções bem-sucedidas em um DataFrame."""
+
+    registros = []
+
+    for resultado in resultados:
+        if resultado.get("status") != "sucesso":
+            continue
+
+        metricas = resultado["metricas"]
+
+        registros.append({
+            "cliente_id": resultado["cliente_id"],
+            "nivel_risco": resultado["parecer"]["nivel_risco"],
+            "latencia_segundos": metricas["latencia_segundos"],
+            "tokens_entrada": metricas["tokens_entrada"],
+            "tokens_saida": metricas["tokens_saida"],
+            "tokens_raciocinio": metricas["tokens_raciocinio"],
+            "tokens_totais": metricas["tokens_totais"],
+            "qtd_chamadas_ferramentas": len(
+                resultado["ferramentas_usadas"]
+            ),
+        })
+
+    return pd.DataFrame(registros)
+
+if __name__ == "__main__":
+    caminho_ranking = (
+        Path(__file__).resolve().parent.parent
+        / "outputs"
+        / "ranking_top10.csv"
+    )
+
+    ranking = pd.read_csv(caminho_ranking)
+
+    clientes_top10 = (
+        ranking["cliente_id"]
+        .head(10)
+        .tolist()
+    )
+
+    print("Clientes selecionados para o lote:")
+    print(clientes_top10)
+
+    resultados = executar_lote(clientes_top10)
+
+    metricas_df = consolidar_metricas(resultados)
+
+    caminho_metricas = (
+        Path(__file__).resolve().parent.parent
+        / "outputs"
+        / "metricas_agente.csv"
+    )
+
+    metricas_df.to_csv(
+        caminho_metricas,
+        index=False
+    )
+
+    print("\n--- Métricas do lote ---")
+    print(metricas_df.to_string(index=False))
+
+    if not metricas_df.empty:
+        print("\nResumo:")
+        print(
+            f"Latência média: "
+            f"{metricas_df['latencia_segundos'].mean():.2f}s"
+        )
+
+        print(
+            f"Tokens totais consumidos: "
+            f"{metricas_df['tokens_totais'].sum():.0f}"
+        )
+
+        print(
+            f"Chamadas de ferramentas: "
+            f"{metricas_df['qtd_chamadas_ferramentas'].sum()}"
+        )
