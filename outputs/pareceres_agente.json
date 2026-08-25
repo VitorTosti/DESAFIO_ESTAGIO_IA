@@ -1,0 +1,452 @@
+[
+  {
+    "cliente_id": "CLI-014",
+    "status": "sucesso",
+    "plano_investigacao": {
+      "consultar_operacoes_dia": true,
+      "consultar_perfil_canal": false,
+      "justificativa_plano": "Existem datas específicas de valores atípicos identificadas no histórico que precisam ser examinadas individualmente através das operações do dia. O perfil de canal não é necessário pois o histórico já apresenta volume e quantidade suficientes para a triagem."
+    },
+    "parecer": {
+      "nivel_risco": "médio",
+      "tipologia_suspeita": "Movimentação atípica de valor elevado",
+      "red_flags": [
+        "Concentração de volume atípico representando 72.39% do total movimentado",
+        "Operações de valores expressivos isolados em datas específicas (05/03, 06/03 e 24/03)"
+      ],
+      "justificativa": "O cliente apresentou 3 operações atípicas que somam R$ 58.366,21, representando 72.39% do volume total transacionado no período. A consulta detalhada das datas de valores atípicos revelou transações de montantes elevados, como o pagamento de R$ 23.640,97 via PIX e depósito de R$ 21.064,59 via TED com observação de remessa internacional, destoando da mediana de R$ 2.308,41. As evidências justificam o encaminhamento para análise humana para verificação da compatibilidade econômica dessas transações."
+    },
+    "ferramentas_disponibilizadas": [
+      "operacoes_do_dia"
+    ],
+    "ferramentas_usadas": [
+      "historico_cliente",
+      "operacoes_do_dia",
+      "operacoes_do_dia",
+      "operacoes_do_dia",
+      "operacoes_do_dia"
+    ],
+    "metricas": {
+      "latencia_segundos": 5.66,
+      "tokens_planejamento": 529,
+      "tokens_agente": 1783,
+      "tokens_totais": 2312,
+      "detalhes_planejamento": {
+        "tokens_entrada": 442,
+        "tokens_saida": 87,
+        "tokens_raciocinio": null,
+        "tokens_totais": 529
+      },
+      "detalhes_agente": {
+        "tokens_entrada": 1524,
+        "tokens_saida": 259,
+        "tokens_ferramentas": null,
+        "tokens_raciocinio": null,
+        "tokens_totais": 1783
+      }
+    }
+  },
+  {
+    "cliente_id": "CLI-023",
+    "status": "sucesso",
+    "plano_investigacao": {
+      "consultar_operacoes_dia": true,
+      "consultar_perfil_canal": false,
+      "justificativa_plano": "Existem datas específicas com valores atípicos que precisam ser examinadas individualmente, justificando a consulta de operacoes_do_dia. Não há indícios de fracionamento por datas e o contexto dos canais não acrescenta relevância para o caso."
+    },
+    "parecer": {
+      "nivel_risco": "médio",
+      "tipologia_suspeita": "Movimentação atípica de alto valor",
+      "red_flags": [
+        "Operações atípicas concentradas que representam 72.16% do volume total do período",
+        "Depósito em espécie de alto valor seguido por transferência para remessa internacional"
+      ],
+      "justificativa": "O cliente CLI-023 apresentou um volume total de R$ 148.535,02 distribuído em 12 operações, sendo que duas operações atípicas somaram R$ 107.185,34 (72.16% do volume). A investigação das datas atípicas revelou um depósito em espécie de R$ 41.768,17 em 28/04/2026 e uma transferência enviada para remessa internacional no valor de R$ 65.417,17 em 01/05/2026. A concentração de recursos em operações de valores significativos justifica a necessidade de análise humana para validação da origem e do destino dos recursos, sem caracterizar prova de ilicitude."
+    },
+    "ferramentas_disponibilizadas": [
+      "operacoes_do_dia"
+    ],
+    "ferramentas_usadas": [
+      "historico_cliente",
+      "operacoes_do_dia",
+      "operacoes_do_dia"
+    ],
+    "metricas": {
+      "latencia_segundos": 24.03,
+      "tokens_planejamento": 528,
+      "tokens_agente": 1441,
+      "tokens_totais": 1969,
+      "detalhes_planejamento": {
+        "tokens_entrada": 434,
+        "tokens_saida": 94,
+        "tokens_raciocinio": null,
+        "tokens_totais": 528
+      },
+      "detalhes_agente": {
+        "tokens_entrada": 1165,
+        "tokens_saida": 276,
+        "tokens_ferramentas": null,
+        "tokens_raciocinio": null,
+        "tokens_totais": 1441
+      }
+    }
+  },
+  {
+    "cliente_id": "CLI-028",
+    "status": "sucesso",
+    "plano_investigacao": {
+      "consultar_operacoes_dia": true,
+      "consultar_perfil_canal": false,
+      "justificativa_plano": "Existem operações atípicas datadas em 2026-03-21 que precisam ser examinadas individualmente conforme a regra da ferramenta operacoes_do_dia. O perfil de canal não é necessário pois o histórico apresenta dados suficientes sobre volume e quantidade."
+    },
+    "parecer": {
+      "nivel_risco": "médio",
+      "tipologia_suspeita": "Movimentação atípica de valor elevado sem fracionamento aparente",
+      "red_flags": [
+        "Operações atípicas identificadas no dia 2026-03-21 totalizando R$ 52.590,87, representados por uma transferência recebida de Estrela Assessoria LTDA e uma transferência enviada para Delta Trading LTDA",
+        "Concentração de 59,26% do volume total de transações do período em um único dia"
+      ],
+      "justificativa": "O cliente CLI-028 apresentou um total de 12 operações no período analisado, acumulando um volume de R$ 88.750,80. A investigação focou na data atípica de 2026-03-21, onde foram identificadas duas transações de valores elevados via TED (uma entrada de R$ 24.875,39 e uma saída de R$ 25.590,87, totalizando R$ 52.590,87 no dia). Embora não haja evidência de fracionamento de valores, a alta concentração do volume financeiro em uma única data justifica a sinalização para análise humana a fim de verificar a compatibilidade da movimentação com a atividade econômica declarada."
+    },
+    "ferramentas_disponibilizadas": [
+      "operacoes_do_dia"
+    ],
+    "ferramentas_usadas": [
+      "historico_cliente",
+      "operacoes_do_dia"
+    ],
+    "metricas": {
+      "latencia_segundos": 12.8,
+      "tokens_planejamento": 514,
+      "tokens_agente": 1362,
+      "tokens_totais": 1876,
+      "detalhes_planejamento": {
+        "tokens_entrada": 417,
+        "tokens_saida": 97,
+        "tokens_raciocinio": null,
+        "tokens_totais": 514
+      },
+      "detalhes_agente": {
+        "tokens_entrada": 1042,
+        "tokens_saida": 320,
+        "tokens_ferramentas": null,
+        "tokens_raciocinio": null,
+        "tokens_totais": 1362
+      }
+    }
+  },
+  {
+    "cliente_id": "CLI-013",
+    "status": "sucesso",
+    "plano_investigacao": {
+      "consultar_operacoes_dia": true,
+      "consultar_perfil_canal": false,
+      "justificativa_plano": "Existem operações atípicas concentradas em data específica que precisam ser examinadas individualmente, portanto a ferramenta operacoes_do_dia foi selecionada. O perfil_canal foi desnecessário pois o histórico e as operações sinalizadas são suficientes."
+    },
+    "parecer": {
+      "nivel_risco": "médio",
+      "tipologia_suspeita": "Movimentação atípica de valor elevado em data específica",
+      "red_flags": [
+        "Concentração de volume atípico em uma única data",
+        "Operações de valor elevado destoadas da mediana do cliente"
+      ],
+      "justificativa": "O cliente CLI-013 apresentou 10 operações no período, com volume total de R$ 81.730,99. Foram identificadas 2 operações atípicas no dia 2026-03-06, totalizando R$ 55.241,99 (67,59% do volume total), correspondendo a um depósito de R$ 26.754,23 via TED com contraparte Gama Consultoria SA e um saque de R$ 28.487,76 via TED para Lumen Servicos LTDA. Embora represente uma concentração relevante de recursos em data isolada em relação à mediana do cliente (R$ 3.146,22), trata-se de uma necessidade de análise humana para descartar justificativas comerciais legítimas, não constituindo prova de infração."
+    },
+    "ferramentas_disponibilizadas": [
+      "operacoes_do_dia"
+    ],
+    "ferramentas_usadas": [
+      "historico_cliente",
+      "operacoes_do_dia"
+    ],
+    "metricas": {
+      "latencia_segundos": 72.47,
+      "tokens_planejamento": 509,
+      "tokens_agente": 1310,
+      "tokens_totais": 1819,
+      "detalhes_planejamento": {
+        "tokens_entrada": 418,
+        "tokens_saida": 91,
+        "tokens_raciocinio": null,
+        "tokens_totais": 509
+      },
+      "detalhes_agente": {
+        "tokens_entrada": 1030,
+        "tokens_saida": 280,
+        "tokens_ferramentas": null,
+        "tokens_raciocinio": null,
+        "tokens_totais": 1310
+      }
+    }
+  },
+  {
+    "cliente_id": "CLI-005",
+    "status": "sucesso",
+    "plano_investigacao": {
+      "consultar_operacoes_dia": true,
+      "consultar_perfil_canal": false,
+      "justificativa_plano": "Existem datas específicas com operações atípicas que precisam ser examinadas individualmente, conforme as datas fornecidas no histórico."
+    },
+    "parecer": {
+      "nivel_risco": "médio",
+      "tipologia_suspeita": "Movimentação atípica de valor elevado",
+      "red_flags": [
+        "Operação atípica de valor elevado em 2026-03-14 no valor de 30743.97 BRL via cartao",
+        "Operação atípica de valor elevado em 2026-04-12 no valor de 11988.17 BRL em especie",
+        "Concentração de 66.0% do volume total em operações atípicas"
+      ],
+      "justificativa": "O cliente CLI-005 apresentou um volume total de 64742.66 BRL distribuído em 11 operações, sendo 2 delas classificadas como atípicas, totalizando 42732.14 BRL (66.0% do volume). A consulta detalhada das datas de valores atípicos revelou uma transação expressiva de pagamento via cartão no valor de 30743.97 BRL em 2026-03-14 e uma transferência recebida em espécie no valor de 11988.17 BRL em 2026-04-12. Estas ocorrências justificam a necessidade de acompanhamento, configurando um cenário de risco médio que requer análise humana para verificar a compatibilidade da origem e destino dos recursos com o perfil do cliente."
+    },
+    "ferramentas_disponibilizadas": [
+      "operacoes_do_dia"
+    ],
+    "ferramentas_usadas": [
+      "historico_cliente",
+      "operacoes_do_dia",
+      "operacoes_do_dia"
+    ],
+    "metricas": {
+      "latencia_segundos": 3.93,
+      "tokens_planejamento": 494,
+      "tokens_agente": 1546,
+      "tokens_totais": 2040,
+      "detalhes_planejamento": {
+        "tokens_entrada": 429,
+        "tokens_saida": 65,
+        "tokens_raciocinio": null,
+        "tokens_totais": 494
+      },
+      "detalhes_agente": {
+        "tokens_entrada": 1203,
+        "tokens_saida": 343,
+        "tokens_ferramentas": null,
+        "tokens_raciocinio": null,
+        "tokens_totais": 1546
+      }
+    }
+  },
+  {
+    "cliente_id": "CLI-026",
+    "status": "sucesso",
+    "plano_investigacao": {
+      "consultar_operacoes_dia": true,
+      "consultar_perfil_canal": false,
+      "justificativa_plano": "Existem datas especificas com valores atipicos em 2026-03-01 e 2026-05-17 que representam mais de 60 por cento do volume total, exigindo o exame individual das operacoes do dia. O perfil de canal nao e necessario pois o historico fornece contexto suficiente."
+    },
+    "parecer": {
+      "nivel_risco": "médio",
+      "tipologia_suspeita": "Concentração de volume em operações atípicas isoladas",
+      "red_flags": [
+        "Concentração de 61.72% do volume total em duas operações atípicas",
+        "Operação de valor atípico de R$ 21.261,01 realizada via PIX em 2026-05-17",
+        "Operação de valor atípico de R$ 12.518,30 realizada via cartão em 2026-03-01"
+      ],
+      "justificativa": "O cliente CLI-026 apresentou 12 operações totalizando R$ 54.729,28 no período analisado, com 2 operações consideradas atípicas que concentram 61.72% do volume total. A consulta detalhada das datas atípicas (2026-03-01 e 2026-05-17) revelou transações de maior expressão em comparação à mediana de R$ 2.032,93, sem evidências de fracionamento. As sinalizações indicam necessidade de análise humana para verificar a compatibilidade econômica dessas transações de maior monta com o perfil do cliente, configurando risco médio."
+    },
+    "ferramentas_disponibilizadas": [
+      "operacoes_do_dia"
+    ],
+    "ferramentas_usadas": [
+      "historico_cliente",
+      "operacoes_do_dia",
+      "operacoes_do_dia"
+    ],
+    "metricas": {
+      "latencia_segundos": 4.06,
+      "tokens_planejamento": 545,
+      "tokens_agente": 1552,
+      "tokens_totais": 2097,
+      "detalhes_planejamento": {
+        "tokens_entrada": 431,
+        "tokens_saida": 114,
+        "tokens_raciocinio": null,
+        "tokens_totais": 545
+      },
+      "detalhes_agente": {
+        "tokens_entrada": 1242,
+        "tokens_saida": 310,
+        "tokens_ferramentas": null,
+        "tokens_raciocinio": null,
+        "tokens_totais": 1552
+      }
+    }
+  },
+  {
+    "cliente_id": "CLI-001",
+    "status": "sucesso",
+    "plano_investigacao": {
+      "consultar_operacoes_dia": true,
+      "consultar_perfil_canal": false,
+      "justificativa_plano": "Existem operações atípicas concentradas em data específica que precisam ser examinadas individualmente."
+    },
+    "parecer": {
+      "nivel_risco": "médio",
+      "tipologia_suspeita": "Movimentação atípica em espécie",
+      "red_flags": [
+        "Operação de valor atípico concentrada em data específica",
+        "Utilização de canal em espécie para transação de alto valor"
+      ],
+      "justificativa": "O cliente apresentou 10 operações totalizando R$ 47.947,81, sendo 2 operações atípicas que concentram 72,16% do volume total. A consulta detalhada da data 2026-03-15 revelou uma operação de depósito em espécie no valor de R$ 25.110,15 com a contraparte Beta Transportes ME. As demais datas verificadas (2026-03-06 e 2026-05-26) apresentaram valores de menor monta via cartão e TED. A concentração de volume em transação atípica em espécie justifica a classificação de risco médio para análise humana aprofundada, sem configurar comprovação de ilicitude."
+    },
+    "ferramentas_disponibilizadas": [
+      "operacoes_do_dia"
+    ],
+    "ferramentas_usadas": [
+      "historico_cliente",
+      "operacoes_do_dia",
+      "operacoes_do_dia",
+      "operacoes_do_dia"
+    ],
+    "metricas": {
+      "latencia_segundos": 3.83,
+      "tokens_planejamento": 477,
+      "tokens_agente": 1539,
+      "tokens_totais": 2016,
+      "detalhes_planejamento": {
+        "tokens_entrada": 418,
+        "tokens_saida": 59,
+        "tokens_raciocinio": null,
+        "tokens_totais": 477
+      },
+      "detalhes_agente": {
+        "tokens_entrada": 1285,
+        "tokens_saida": 254,
+        "tokens_ferramentas": null,
+        "tokens_raciocinio": null,
+        "tokens_totais": 1539
+      }
+    }
+  },
+  {
+    "cliente_id": "CLI-029",
+    "status": "sucesso",
+    "plano_investigacao": {
+      "consultar_operacoes_dia": true,
+      "consultar_perfil_canal": false,
+      "justificativa_plano": "Existe uma data de fracionamento identificada em 2026-05-26 que precisa ser examinada individualmente através das operações do dia. O perfil do canal não é necessário pois o histórico de fracionamento é suficiente para a triagem."
+    },
+    "parecer": {
+      "nivel_risco": "médio",
+      "tipologia_suspeita": "Fracionamento de operações",
+      "red_flags": [
+        "Concentração de múltiplas operações em um único dia (2026-05-26) sinalizadas por regras de fracionamento",
+        "Realização de 4 transações somando mais de 71 mil BRL em um único dia"
+      ],
+      "justificativa": "O cliente CLI-029 apresentou um dia de fracionamento identificado em 2026-05-26 com 4 operações totalizando R$ 71.297,68. Embora não haja operações atípicas por valor isolado ao longo do histórico, o comportamento de fracionamento em um único dia requer análise humana para verificar a justificativa comercial das transações."
+    },
+    "ferramentas_disponibilizadas": [
+      "operacoes_do_dia"
+    ],
+    "ferramentas_usadas": [
+      "historico_cliente",
+      "operacoes_do_dia"
+    ],
+    "metricas": {
+      "latencia_segundos": 5.88,
+      "tokens_planejamento": 511,
+      "tokens_agente": 1377,
+      "tokens_totais": 1888,
+      "detalhes_planejamento": {
+        "tokens_entrada": 416,
+        "tokens_saida": 95,
+        "tokens_raciocinio": null,
+        "tokens_totais": 511
+      },
+      "detalhes_agente": {
+        "tokens_entrada": 1181,
+        "tokens_saida": 196,
+        "tokens_ferramentas": null,
+        "tokens_raciocinio": null,
+        "tokens_totais": 1377
+      }
+    }
+  },
+  {
+    "cliente_id": "CLI-017",
+    "status": "sucesso",
+    "plano_investigacao": {
+      "consultar_operacoes_dia": true,
+      "consultar_perfil_canal": false,
+      "justificativa_plano": "Existe uma data de fracionamento identificada em 2026-03-08 que necessita de exame individual, tornando o uso de operacoes_do_dia obrigatório. O perfil_canal não é necessário pois o histórico e as operações fornecidas são suficientes para o contexto."
+    },
+    "parecer": {
+      "nivel_risco": "médio",
+      "tipologia_suspeita": "Fracionamento de Operações",
+      "red_flags": [
+        "Concentração de múltiplas operações em um único dia com indicativo de fracionamento em 2026-03-08",
+        "Volume total de operações de R$ 121.391,37 distribuído em 13 transações"
+      ],
+      "justificativa": "O cliente CLI-017 apresentou um histórico com 13 operações totalizando R$ 121.391,37, com sinalização determinística para fracionamento na data 2026-03-08. A consulta das operações do dia 2026-03-08 revelou quatro transações (saque, pagamento, transferência enviada e depósito) totalizando R$ 64.673,88, todas sinalizadas com flag de fracionamento. Essa concentração de transações em um único dia justifica a necessidade de análise humana, sem configurar comprovação de ilicitude."
+    },
+    "ferramentas_disponibilizadas": [
+      "operacoes_do_dia"
+    ],
+    "ferramentas_usadas": [
+      "historico_cliente",
+      "operacoes_do_dia"
+    ],
+    "metricas": {
+      "latencia_segundos": 10.46,
+      "tokens_planejamento": 515,
+      "tokens_agente": 1436,
+      "tokens_totais": 1951,
+      "detalhes_planejamento": {
+        "tokens_entrada": 413,
+        "tokens_saida": 102,
+        "tokens_raciocinio": null,
+        "tokens_totais": 515
+      },
+      "detalhes_agente": {
+        "tokens_entrada": 1182,
+        "tokens_saida": 254,
+        "tokens_ferramentas": null,
+        "tokens_raciocinio": null,
+        "tokens_totais": 1436
+      }
+    }
+  },
+  {
+    "cliente_id": "CLI-030",
+    "status": "sucesso",
+    "plano_investigacao": {
+      "consultar_operacoes_dia": true,
+      "consultar_perfil_canal": false,
+      "justificativa_plano": "Existe uma operação atípica em 2026-03-08 com volume representativo. A ferramenta operacoes_do_dia deve ser usada para examinar essa data especificamente. Perfil de canal desnecessário pois o histórico e o volume atípico pontual são suficientes para a triagem."
+    },
+    "parecer": {
+      "nivel_risco": "médio",
+      "tipologia_suspeita": "Movimentação atípica de valor expressivo em operação isolada",
+      "red_flags": [
+        "Operação atípica de valor elevado (R$ 77.628,19) representando 65,91% do volume total transacionado pelo cliente no período",
+        "Remessa internacional recebida de contraparte corporativa"
+      ],
+      "justificativa": "O cliente CLI-030 apresentou 9 operações totalizando R$ 117.780,89 no período analisado, com forte concentração em uma única operação atípica de R$ 77.628,19 realizada em 2026-03-08, caracterizada como recebimento de transferência internacional (remessa) via TED de contraparte corporativa. Embora o fracionamento não tenha sido identificado, o volume expressivo concentrado nessa data justifica o encaminhamento para análise humana para confirmação da origem e justificativa econômica da remessa."
+    },
+    "ferramentas_disponibilizadas": [
+      "operacoes_do_dia"
+    ],
+    "ferramentas_usadas": [
+      "historico_cliente",
+      "operacoes_do_dia"
+    ],
+    "metricas": {
+      "latencia_segundos": 2.88,
+      "tokens_planejamento": 527,
+      "tokens_agente": 1226,
+      "tokens_totais": 1753,
+      "detalhes_planejamento": {
+        "tokens_entrada": 420,
+        "tokens_saida": 107,
+        "tokens_raciocinio": null,
+        "tokens_totais": 527
+      },
+      "detalhes_agente": {
+        "tokens_entrada": 981,
+        "tokens_saida": 245,
+        "tokens_ferramentas": null,
+        "tokens_raciocinio": null,
+        "tokens_totais": 1226
+      }
+    }
+  }
+]

@@ -39,24 +39,155 @@ class ParecerAgente(BaseModel):
     justificativa: str
 
 
+class PlanoInvestigacao(BaseModel):
+    """Define quais aprofundamentos são necessários para o cliente."""
+
+    consultar_operacoes_dia: bool
+    consultar_perfil_canal: bool
+    justificativa_plano: str
+
+
 FERRAMENTAS = [
     historico_cliente,
     operacoes_do_dia,
     perfil_canal,
 ]
 
-CONFIG_AGENTE = types.GenerateContentConfig(
-    temperature=0.2,
-    tools=FERRAMENTAS,
-    response_mime_type="application/json",
-    response_schema=ParecerAgente,
 
-    automatic_function_calling=types.AutomaticFunctionCallingConfig(
-        maximum_remote_calls=6,
-        ignore_call_history=False,
-    ),
+def planejar_investigacao(
+    cliente_id: str,
+    historico: dict,
+) -> tuple[PlanoInvestigacao, dict]:
+    """Decide quais ferramentas adicionais são necessárias para o caso."""
 
-    system_instruction="""
+    config_planejamento = types.GenerateContentConfig(
+        temperature=0.0,
+        response_mime_type="application/json",
+        response_schema=PlanoInvestigacao,
+        system_instruction="""
+Você atua como planejador de uma investigação de triagem de PLD.
+
+Você receberá o histórico determinístico de um cliente já sinalizado.
+
+Sua tarefa é decidir quais fontes adicionais são realmente necessárias.
+
+Ferramentas possíveis:
+
+1. operacoes_do_dia
+   Use quando existirem datas de fracionamento ou de operações atípicas
+   que precisem ser examinadas individualmente.
+
+2. perfil_canal
+   Use somente quando a distribuição entre PIX, TED, boleto ou cartão
+   puder acrescentar contexto relevante à investigação.
+
+Regras:
+
+- Não solicite ferramentas apenas para complementar o parecer.
+- Não solicite perfil_canal quando o histórico e as operações sinalizadas
+  forem suficientes.
+- Não realize cálculos.
+- Não altere as flags determinísticas.
+- Prefira a menor quantidade de ferramentas necessária.
+"""
+    )
+
+    prompt = f"""
+Cliente: {cliente_id}
+
+Histórico determinístico:
+{historico}
+
+Decida quais aprofundamentos são necessários.
+"""
+
+    response = client.models.generate_content(
+        model=MODELO,
+        contents=prompt,
+        config=config_planejamento,
+    )
+
+    plano = PlanoInvestigacao.model_validate_json(
+        response.text
+    )
+
+    uso = response.usage_metadata
+
+    metricas_planejamento = {
+        "tokens_entrada": (
+            getattr(uso, "prompt_token_count", None)
+            if uso
+            else None
+        ),
+        "tokens_saida": (
+            getattr(uso, "candidates_token_count", None)
+            if uso
+            else None
+        ),
+        "tokens_raciocinio": (
+            getattr(uso, "thoughts_token_count", None)
+            if uso
+            else None
+        ),
+        "tokens_totais": (
+            getattr(uso, "total_token_count", None)
+            if uso
+            else None
+        ),
+    }
+
+    return plano, metricas_planejamento
+
+
+def analisar_cliente(cliente_id: str) -> dict:
+    """Planeja e executa a investigação agentic de um cliente."""
+
+    inicio = time.perf_counter()
+
+    try:
+        # O histórico funciona como contexto determinístico inicial.
+        historico = historico_cliente(cliente_id)
+
+        if "erro" in historico:
+            raise ValueError(historico["erro"])
+
+        # A LLM decide quais aprofundamentos realmente são necessários.
+        plano, metricas_planejamento = planejar_investigacao(
+            cliente_id=cliente_id,
+            historico=historico,
+        )
+
+        ferramentas_disponiveis = []
+
+        if plano.consultar_operacoes_dia:
+            ferramentas_disponiveis.append(
+                operacoes_do_dia
+            )
+
+        if plano.consultar_perfil_canal:
+            ferramentas_disponiveis.append(
+                perfil_canal
+            )
+
+        # A configuração do agente é construída dinamicamente.
+        config_agente = types.GenerateContentConfig(
+            temperature=0.2,
+            tools=(
+                ferramentas_disponiveis
+                if ferramentas_disponiveis
+                else None
+            ),
+            response_mime_type="application/json",
+            response_schema=ParecerAgente,
+            automatic_function_calling=(
+                types.AutomaticFunctionCallingConfig(
+                    maximum_remote_calls=6,
+                    ignore_call_history=False,
+                )
+                if ferramentas_disponiveis
+                else None
+            ),
+            system_instruction="""
 Você atua como agente de triagem de Prevenção à Lavagem de Dinheiro (PLD).
 
 Seu objetivo é investigar clientes previamente sinalizados por regras
@@ -68,92 +199,75 @@ Regras obrigatórias:
 
 - Não refaça cálculos determinísticos.
 
-- Nunca realize somas, médias, medianas, percentuais, proporções ou
-  comparações numéricas por conta própria.
-
-- Utilize somente métricas numéricas explicitamente retornadas pelas
-  ferramentas.
-
-- Se uma métrica não estiver disponível nas ferramentas, não tente calculá-la.
-
 - Não altere nem questione as flags calculadas pelo pandas.
 
-- Escolha somente as ferramentas necessárias para investigar cada caso.
+- Utilize somente as ferramentas disponibilizadas pelo plano de investigação.
 
-- Comece preferencialmente por historico_cliente para compreender quais
-  sinalizações determinísticas existem.
+- Cada ferramenta deve ser chamada apenas quando necessária.
 
-- Utilize operacoes_do_dia somente quando houver uma data sinalizada que
-  precise ser aprofundada.
+- Nunca consulte a mesma ferramenta mais de uma vez com os mesmos argumentos.
 
-- Utilize perfil_canal somente quando a distribuição por canais for relevante
-  para esclarecer ou contextualizar a sinalização identificada.
+- Para operacoes_do_dia, consulte cada data relevante exatamente uma vez.
 
-- Não utilize perfil_canal apenas para complementar o parecer quando o
-  histórico e as operações sinalizadas já forem suficientes.
+- Se uma data já foi consultada, utilize o resultado existente e não faça
+  uma nova chamada para a mesma data.
 
-- Não chame todas as ferramentas automaticamente. A ausência de chamada de
-  uma ferramenta é esperada quando ela não acrescenta informação relevante
-  ao caso.
+- Não repita chamadas de ferramentas para confirmar informações que já foram
+  retornadas anteriormente.
 
-- Diferencie fatos observados de hipóteses que exigem investigação adicional.
+- Se existirem várias datas relevantes, consulte cada data uma única vez.
+
+- Diferencie fatos observados de hipóteses que exigem investigação.
 
 - Não presuma intenção criminosa, origem dos recursos ou relação entre partes.
 
 - Uma sinalização representa necessidade de análise humana, não prova de
   lavagem de dinheiro.
 
-- Caso uma ferramenta revele uma data relevante, você pode utilizar
-  operacoes_do_dia para investigar aquele evento específico.
-
-- Ao descrever operações sinalizadas, utilize as flags retornadas pelas ferramentas
-  e não refaça comparações entre valores e limites ou estatísticas.
-
-- Não mencione origem, destino ou compatibilidade com o perfil econômico do
-  cliente como fatos quando essas informações não estiverem disponíveis.
-  Esses elementos podem ser indicados apenas como informações adicionais
-  que uma análise humana poderia solicitar.
+- Produza o parecer somente após concluir as consultas necessárias.
 """
-)
+        )
 
-
-def analisar_cliente(cliente_id: str) -> dict:
-    """Executa o agente de PLD para um cliente e registra sua execução."""
-
-    prompt = f"""
+        prompt = f"""
 Analise o cliente {cliente_id}.
 
-O cliente já foi selecionado pelas regras determinísticas do processo.
+O cliente já foi selecionado pelas regras determinísticas.
 
-Investigue o caso utilizando somente as ferramentas que considerar
-necessárias.
+Histórico determinístico do cliente:
+{historico}
+
+Plano de investigação:
+{plano.model_dump()}
+
+As ferramentas disponibilizadas nesta execução foram selecionadas
+dinamicamente de acordo com esse plano.
+
+Caso operacoes_do_dia esteja disponível, consulte somente datas sinalizadas
+presentes no histórico que sejam relevantes para o parecer.
+
+Caso perfil_canal esteja disponível, utilize-o somente se a informação de
+canais acrescentar contexto relevante.
 
 Produza o parecer final conforme a estrutura solicitada.
-
-Baseie a análise exclusivamente nos dados disponíveis e nas métricas
-retornadas pelas ferramentas.
 """
 
-    chat = client.chats.create(
-        model=MODELO,
-        config=CONFIG_AGENTE,
-    )
+        chat = client.chats.create(
+            model=MODELO,
+            config=config_agente,
+        )
 
-    inicio = time.perf_counter()
-
-    try:
         response = chat.send_message(prompt)
 
-        latencia = time.perf_counter() - inicio
-
-        # Valida a resposta final conforme o schema definido.
         parecer = ParecerAgente.model_validate_json(
             response.text
         )
 
-        # Recupera as ferramentas realmente escolhidas pelo agente.
-        ferramentas_usadas = []
+        # historico_cliente é o contexto determinístico inicial.
+        ferramentas_usadas = [
+            "historico_cliente"
+        ]
 
+        # Registra somente function calls realmente executadas.
         for conteudo in chat.get_history():
             for parte in conteudo.parts or []:
                 if parte.function_call:
@@ -161,15 +275,11 @@ retornadas pelas ferramentas.
                         parte.function_call.name
                     )
 
-        # Recupera métricas da chamada.
+        latencia = time.perf_counter() - inicio
+
         uso = response.usage_metadata
 
-        metricas = {
-            "latencia_segundos": round(
-                latencia,
-                2
-            ),
-
+        metricas_agente = {
             "tokens_entrada": (
                 getattr(
                     uso,
@@ -179,7 +289,6 @@ retornadas pelas ferramentas.
                 if uso
                 else None
             ),
-
             "tokens_saida": (
                 getattr(
                     uso,
@@ -189,7 +298,6 @@ retornadas pelas ferramentas.
                 if uso
                 else None
             ),
-
             "tokens_ferramentas": (
                 getattr(
                     uso,
@@ -199,7 +307,6 @@ retornadas pelas ferramentas.
                 if uso
                 else None
             ),
-
             "tokens_raciocinio": (
                 getattr(
                     uso,
@@ -209,7 +316,6 @@ retornadas pelas ferramentas.
                 if uso
                 else None
             ),
-
             "tokens_totais": (
                 getattr(
                     uso,
@@ -221,11 +327,54 @@ retornadas pelas ferramentas.
             ),
         }
 
+        # Soma segura: None é tratado como zero apenas para consolidação.
+        tokens_planejamento = (
+            metricas_planejamento["tokens_totais"] or 0
+        )
+
+        tokens_agente = (
+            metricas_agente["tokens_totais"] or 0
+        )
+
+        tokens_totais = (
+            tokens_planejamento
+            + tokens_agente
+        )
+
+        metricas = {
+            "latencia_segundos": round(
+                latencia,
+                2
+            ),
+            "tokens_planejamento": (
+                metricas_planejamento["tokens_totais"]
+            ),
+            "tokens_agente": (
+                metricas_agente["tokens_totais"]
+            ),
+            "tokens_totais": tokens_totais,
+            "detalhes_planejamento": metricas_planejamento,
+            "detalhes_agente": metricas_agente,
+        }
+
         return {
             "cliente_id": cliente_id,
             "status": "sucesso",
+
+            # Permite auditar a decisão tomada antes da investigação.
+            "plano_investigacao": plano.model_dump(),
+
             "parecer": parecer.model_dump(),
+
+            # Ferramentas que o planejador permitiu ao agente utilizar.
+            "ferramentas_disponibilizadas": [
+                ferramenta.__name__
+                for ferramenta in ferramentas_disponiveis
+            ],
+
+            # Ferramentas efetivamente executadas.
             "ferramentas_usadas": ferramentas_usadas,
+
             "metricas": metricas,
         }
 
@@ -321,8 +470,10 @@ def executar_lote(
 
     return resultados
 
-def consolidar_metricas(resultados: list[dict]) -> pd.DataFrame:
-    """Consolida métricas das execuções bem-sucedidas em um DataFrame."""
+def consolidar_metricas(
+    resultados: list[dict]
+) -> pd.DataFrame:
+    """Consolida métricas das execuções bem-sucedidas."""
 
     registros = []
 
@@ -334,12 +485,26 @@ def consolidar_metricas(resultados: list[dict]) -> pd.DataFrame:
 
         registros.append({
             "cliente_id": resultado["cliente_id"],
-            "nivel_risco": resultado["parecer"]["nivel_risco"],
-            "latencia_segundos": metricas["latencia_segundos"],
-            "tokens_entrada": metricas["tokens_entrada"],
-            "tokens_saida": metricas["tokens_saida"],
-            "tokens_raciocinio": metricas["tokens_raciocinio"],
-            "tokens_totais": metricas["tokens_totais"],
+            "nivel_risco": (
+                resultado["parecer"]["nivel_risco"]
+            ),
+            "latencia_segundos": (
+                metricas["latencia_segundos"]
+            ),
+            "tokens_planejamento": (
+                metricas["tokens_planejamento"]
+            ),
+            "tokens_agente": (
+                metricas["tokens_agente"]
+            ),
+            "tokens_totais": (
+                metricas["tokens_totais"]
+            ),
+            "qtd_ferramentas_disponibilizadas": len(
+                resultado[
+                    "ferramentas_disponibilizadas"
+                ]
+            ),
             "qtd_chamadas_ferramentas": len(
                 resultado["ferramentas_usadas"]
             ),

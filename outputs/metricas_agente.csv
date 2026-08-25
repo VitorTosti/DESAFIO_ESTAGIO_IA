@@ -1,0 +1,11 @@
+cliente_id,nivel_risco,latencia_segundos,tokens_planejamento,tokens_agente,tokens_totais,qtd_ferramentas_disponibilizadas,qtd_chamadas_ferramentas
+CLI-014,médio,5.66,529,1783,2312,1,5
+CLI-023,médio,24.03,528,1441,1969,1,3
+CLI-028,médio,12.8,514,1362,1876,1,2
+CLI-013,médio,72.47,509,1310,1819,1,2
+CLI-005,médio,3.93,494,1546,2040,1,3
+CLI-026,médio,4.06,545,1552,2097,1,3
+CLI-001,médio,3.83,477,1539,2016,1,4
+CLI-029,médio,5.88,511,1377,1888,1,2
+CLI-017,médio,10.46,515,1436,1951,1,2
+CLI-030,médio,2.88,527,1226,1753,1,2
