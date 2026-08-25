@@ -69,3 +69,20 @@ substituta da validação da solução.
 O código e os resultados utilizados na entrega foram executados, inspecionados
 e ajustados ao longo do desenvolvimento. As decisões consideradas relevantes
 para a implementação estão documentadas em `docs/DECISOES.md`.
+
+## Um ponto em que a IA levou para um caminho inadequado
+
+Durante a implementação do agente, inicialmente foi sugerido confiar apenas
+nas instruções do prompt para evitar chamadas desnecessárias de ferramentas.
+
+Os testes mostraram que isso não era suficiente: o agente ainda utilizava
+`perfil_canal` em casos em que a informação não era necessária e, em algumas
+execuções, repetia consultas de `operacoes_do_dia`.
+
+A solução foi alterada para incluir uma etapa explícita de planejamento, que
+decide quais ferramentas adicionais serão disponibilizadas para cada cliente.
+Também foram adicionadas instruções para impedir consultas redundantes.
+
+Esse caso reforçou a importância de validar empiricamente sugestões geradas
+por IA em vez de assumir que uma instrução de prompt garante o comportamento
+esperado.
