@@ -85,10 +85,7 @@ Os resultados concluídos são persistidos incrementalmente em
 `outputs/pareceres_agente.json`, reduzindo o risco de perda das análises já
 realizadas caso uma execução posterior falhe.
 
-Na execução final, os 10 clientes foram processados com sucesso. Durante o lote,
-alguns casos exigiram novas tentativas devido a falhas temporárias da API ou
-respostas incompatíveis com o schema esperado. O mecanismo de retry permitiu
-concluir o processamento sem interromper todo o lote.
+Na execução final, os 10 clientes foram processados com sucesso. Durante o lote, alguns casos exigiram novas tentativas devido a falhas temporárias da API ou respostas incompatíveis com o schema esperado. O mecanismo de retry permitiu concluir o processamento sem interromper todo o lote.
 
 
 ### Métricas e observabilidade
@@ -108,3 +105,49 @@ A execução também demonstrou a utilidade do mecanismo de retry: alguns client
 As métricas consolidadas representam as execuções finais bem-sucedidas.
 Tentativas encerradas com erro e períodos de espera entre retries não são
 incorporados ao total consolidado de tokens nem à latência média.
+
+## Nível 2 — Confronto entre regras e agente
+
+Para permitir a comparação entre as regras determinísticas e o parecer do
+agente, foi necessário converter as sinalizações em uma categoria de risco.
+
+O critério adotado foi:
+
+- **alto:** cliente com os dois tipos de alerta ou com 3 ou mais sinalizações;
+- **médio:** cliente com 1 ou 2 sinalizações;
+- **baixo:** cliente sem sinalizações.
+
+O critério é propositalmente simples e funciona como uma referência
+determinística para o confronto, não como uma classificação definitiva de
+risco.
+
+### Resultado
+
+A taxa de concordância entre o risco derivado das regras e o risco atribuído
+pelo agente foi de **90%**.
+
+Houve uma única divergência, no cliente `CLI-014`:
+
+- risco pelas regras: **alto**;
+- risco pelo agente: **médio**.
+
+O cliente recebeu três sinalizações de valor atípico, fazendo com que o
+critério determinístico o classificasse automaticamente como risco alto.
+
+O agente, por outro lado, manteve risco médio após analisar o contexto das
+operações sinalizadas.
+
+Essa divergência evidencia uma limitação do critério determinístico adotado:
+a quantidade de alertas, isoladamente, não diferencia múltiplas ocorrências
+de uma mesma tipologia da presença simultânea de diferentes padrões de risco.
+
+Neste caso, considero a classificação do agente defensável, pois as três
+sinalizações pertencem à mesma regra de valor atípico e não houve ocorrência
+de fracionamento.
+
+Em um cenário real, a divergência deveria ser encaminhada para análise humana,
+em vez de considerar automaticamente uma das abordagens como correta.
+
+Com mais tempo, o critério determinístico poderia incorporar pesos distintos
+por tipologia, recorrência temporal e combinação de diferentes sinais, além
+de ser calibrado sobre exemplos rotulados.
