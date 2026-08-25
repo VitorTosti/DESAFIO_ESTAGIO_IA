@@ -51,6 +51,7 @@ def limpar_dados(
 
     return df_limpo
 
+
 def aplicar_regras(df: pd.DataFrame) -> pd.DataFrame:
     """Aplica as regras determinísticas de fracionamento e valor atípico."""
 
@@ -120,6 +121,68 @@ def aplicar_regras(df: pd.DataFrame) -> pd.DataFrame:
 
     return resultado
 
+
+def gerar_ranking(df: pd.DataFrame, top_n: int = 10) -> pd.DataFrame:
+    """Gera o ranking dos clientes com maior número de sinalizações."""
+
+    # Cada combinação cliente + data representa um único evento
+    # de fracionamento, mesmo que várias operações estejam envolvidas.
+    fracionamentos = (
+        df[df["flag_fracionamento"]]
+        .drop_duplicates(subset=["cliente_id", "data"])
+        .groupby("cliente_id")
+        .size()
+        .rename("qtd_fracionamentos")
+    )
+
+    # Na regra de valor atípico, cada operação sinalizada
+    # representa uma ocorrência independente.
+    valores_atipicos = (
+        df.groupby("cliente_id")["flag_valor_atipico"]
+        .sum()
+        .rename("qtd_valores_atipicos")
+    )
+
+    # O volume total será utilizado como critério de desempate.
+    volumes = (
+        df.groupby("cliente_id")["valor_brl"]
+        .sum()
+        .rename("volume_total_brl")
+    )
+
+    ranking = pd.concat(
+        [fracionamentos, valores_atipicos, volumes],
+        axis=1
+    ).fillna(0)
+
+    ranking["qtd_fracionamentos"] = (
+        ranking["qtd_fracionamentos"].astype(int)
+    )
+
+    ranking["qtd_valores_atipicos"] = (
+        ranking["qtd_valores_atipicos"].astype(int)
+    )
+
+    # Número total de sinalizações recebidas por cada cliente.
+    ranking["total_sinalizacoes"] = (
+        ranking["qtd_fracionamentos"]
+        + ranking["qtd_valores_atipicos"]
+    )
+
+    # Primeiro ordena pelo número de sinalizações.
+    # Em caso de empate, maior volume financeiro aparece primeiro.
+    ranking = (
+        ranking.reset_index()
+        .sort_values(
+            by=["total_sinalizacoes", "volume_total_brl"],
+            ascending=[False, False]
+        )
+        .head(top_n)
+        .reset_index(drop=True)
+    )
+
+    return ranking
+
 if __name__ == "__main__":
     # Carrega os dados do Nível 2.
     df, taxa_cambio = carregar_dados(
@@ -146,3 +209,22 @@ if __name__ == "__main__":
         f"Operações com valor atípico: "
         f"{df_regras['flag_valor_atipico'].sum()}"
     )
+
+    ranking_top10 = gerar_ranking(df_regras)
+
+    print("\nTop 10 clientes mais sinalizados:")
+    print(ranking_top10.to_string(index=False))
+
+        # Salva o ranking para tornar o resultado da Parte A auditável.
+    caminho_saida = (
+        Path(__file__).resolve().parent.parent
+        / "outputs"
+        / "ranking_top10.csv"
+    )
+
+    ranking_top10.to_csv(
+        caminho_saida,
+        index=False
+    )
+
+    print(f"\nRanking salvo em: {caminho_saida}")
